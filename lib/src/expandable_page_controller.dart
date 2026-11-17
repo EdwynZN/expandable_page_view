@@ -30,6 +30,8 @@ import 'package:flutter/widgets.dart';
 /// ```
 class ExpandablePageController extends PageController {
   int _itemCount;
+  double? _previousPage;
+  bool _usePrevious = false;
 
   /// Large multiplier for initial page offset in loop mode.
   /// This allows scrolling in both directions from the start.
@@ -57,6 +59,7 @@ class ExpandablePageController extends PageController {
   int get itemCount => _itemCount;
   set itemCount(int value) {
     assert(value > 0, 'itemCount must be greater than 0');
+    _usePrevious = value > _itemCount;
     _itemCount = value;
   }
 
@@ -76,7 +79,12 @@ class ExpandablePageController extends PageController {
   double? get page {
     final virtualPage = super.page;
     if (virtualPage == null) return null;
-    return ((virtualPage % _itemCount) + _itemCount) % _itemCount;
+    if (_usePrevious) {
+      _usePrevious = false;
+      return _previousPage;
+    }
+    _previousPage = ((virtualPage % _itemCount) + _itemCount) % _itemCount;
+    return _previousPage;
   }
 
   /// The current real page index (rounded).
