@@ -247,9 +247,9 @@ class _ExpandablePageViewState extends State<ExpandablePageView> {
   int get _itemCount => widget.itemCount ?? widget.children!.length;
 
   /// Converts a virtual index (used in infinite scroll) to a real index (0 to _itemCount-1).
-  int _realIndex(int virtualIndex) {
+  int _realIndex(int virtualIndex, [int? itemCount]) {
     if (!widget.loop) return virtualIndex;
-    final count = _itemCount;
+    final count = itemCount ?? _itemCount;
     // Handle negative indices properly
     return ((virtualIndex % count) + count) % count;
   }
@@ -379,7 +379,7 @@ class _ExpandablePageViewState extends State<ExpandablePageView> {
     if (oldWidget.loop != widget.loop) {
       _handleLoopChange(oldWidget);
       if (_shouldReinitializeHeights(oldWidget)) {
-        _reinitializeSizes();
+        _reinitializeSizes(_previousItemCount(oldWidget));
       }
       return;
     }
@@ -406,7 +406,7 @@ class _ExpandablePageViewState extends State<ExpandablePageView> {
     }
 
     if (_shouldReinitializeHeights(oldWidget)) {
-      _reinitializeSizes();
+      _reinitializeSizes(_previousItemCount(oldWidget));
     }
   }
 
@@ -559,8 +559,15 @@ class _ExpandablePageViewState extends State<ExpandablePageView> {
     return oldWidget.children?.length != widget.children?.length;
   }
 
-  void _reinitializeSizes() {
-    final realCurrentPage = _realIndex(_currentPage);
+  int? _previousItemCount(ExpandablePageView oldWidget) {
+    final int previousLength = oldWidget.itemCount ?? oldWidget.children!.length;
+    final int length = widget.itemCount ?? widget.children!.length;
+    if (length > previousLength) return previousLength;
+    return null;
+  }
+
+  void _reinitializeSizes(int? previousItemCount) {
+    final realCurrentPage = _realIndex(_currentPage, previousItemCount);
     final currentPageSize = _sizes[realCurrentPage];
 
     final estimatedSizes = _prepareSizes();
@@ -569,17 +576,15 @@ class _ExpandablePageViewState extends State<ExpandablePageView> {
     }
     _sizes = estimatedSizes;
 
-    if (!widget.loop && realCurrentPage >= _sizes.length) {
+    if (!widget.loop) return;
+    if (realCurrentPage >= _sizes.length) {
       final differenceFromPreviousToCurrent = _previousPage - _currentPage;
       _currentPage = _sizes.length - 1;
       widget.onPageChanged?.call(_currentPage);
 
       _previousPage = (_currentPage + differenceFromPreviousToCurrent).clamp(0, _sizes.length - 1);
     }
-
-    if (!widget.loop) {
-      _previousPage = _previousPage.clamp(0, _sizes.length - 1);
-    }
+    _previousPage = _previousPage.clamp(0, _sizes.length - 1);
     _sizes[_realIndex(_currentPage)] = currentPageSize;
   }
 
