@@ -61,10 +61,11 @@ class ExpandablePageController extends PageController {
     final original = realPage;
     _itemCount = value;
     if (!hasClients) return;
-    var translation = (original - realPage).toDouble();
-    if (original > value) translation *= -1;
+    num translation = original >= value
+        ? (value - original - 1)
+        : (original - realPage);
     translation *= position.viewportDimension;
-    if (translation != 0) position.correctBy(translation);
+    if (translation != 0) position.correctBy(translation.toDouble());
   }
 
   /// Converts a virtual index to a real index (0 to [itemCount]-1).
